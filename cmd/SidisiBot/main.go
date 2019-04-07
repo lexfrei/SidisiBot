@@ -38,6 +38,8 @@ func main() {
 	// 	},
 	// }}
 
+	myClient := &http.Client{}
+
 	bot, err := tgbotapi.NewBotAPIWithClient(token, myClient)
 
 	if err != nil {
