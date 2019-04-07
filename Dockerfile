@@ -1,7 +1,7 @@
 FROM golang
 
 COPY ./ /go/src/github.com/lexfrei/SidisiBot/
-WORKDIR /go/src/github.com/lexfrei/SidisiBot/cmd/
+WORKDIR /go/src/github.com/lexfrei/SidisiBot/cmd/SidisiBot/
 
 RUN go get ./ && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o SidisiBot
 
