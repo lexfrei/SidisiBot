@@ -1,11 +1,9 @@
 package main
 
 import (
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"log"
-	"net"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -30,15 +28,15 @@ func init() {
 }
 
 func main() {
-	// Enforce ipv6 connection
-	myClient := &http.Client{Transport: &http.Transport{
-		Dial: func(network, addr string) (net.Conn, error) {
-			return net.Dial("tcp6", addr)
-		},
-		DialTLS: func(network, addr string) (net.Conn, error) {
-			return tls.Dial("tcp6", addr, &tls.Config{})
-		},
-	}}
+	// // Enforce ipv6 connection
+	// myClient := &http.Client{Transport: &http.Transport{
+	// 	Dial: func(network, addr string) (net.Conn, error) {
+	// 		return net.Dial("tcp6", addr)
+	// 	},
+	// 	DialTLS: func(network, addr string) (net.Conn, error) {
+	// 		return tls.Dial("tcp6", addr, &tls.Config{})
+	// 	},
+	// }}
 
 	bot, err := tgbotapi.NewBotAPIWithClient(token, myClient)
 
