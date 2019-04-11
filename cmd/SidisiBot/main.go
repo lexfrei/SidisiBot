@@ -2,11 +2,9 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"net/url"
-	"strconv"
 
 	"github.com/spf13/viper"
 
@@ -18,7 +16,10 @@ var token string
 
 func init() {
 	viper.SetEnvPrefix("sidisi")
-	viper.BindEnv("token")
+	err := viper.BindEnv("token")
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	token = viper.GetString("token")
 
@@ -28,8 +29,10 @@ func init() {
 }
 
 func main() {
+	myClient := &http.Client{}
+
 	// // Enforce ipv6 connection
-	// myClient := &http.Client{Transport: &http.Transport{
+	// myClient = &http.Client{Transport: &http.Transport{
 	// 	Dial: func(network, addr string) (net.Conn, error) {
 	// 		return net.Dial("tcp6", addr)
 	// 	},
@@ -37,8 +40,6 @@ func main() {
 	// 		return tls.Dial("tcp6", addr, &tls.Config{})
 	// 	},
 	// }}
-
-	myClient := &http.Client{}
 
 	bot, err := tgbotapi.NewBotAPIWithClient(token, myClient)
 
@@ -83,12 +84,13 @@ func main() {
 			}
 
 		} else {
-
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, scgPrices(update.Message.Text))
 			msg.ParseMode = "markdown"
-			fmt.Println(update.Message.Text)
 			msg.ReplyToMessageID = update.Message.MessageID
-			bot.Send(msg)
+			_, err = bot.Send(msg)
+			if err != nil {
+				log.Println(err)
+			}
 		}
 
 	}
@@ -96,7 +98,6 @@ func main() {
 }
 
 func fuzzCard(card string) string {
-	log.Println("Trying to find:", card)
 	var c Card
 	u, err := url.Parse("https://api.scryfall.com/cards/named")
 	if err != nil {
@@ -108,17 +109,18 @@ func fuzzCard(card string) string {
 
 	u.RawQuery = q.Encode()
 
-	log.Println(u.String())
-
 	res, err := http.Get(u.String())
 	if err != nil {
 		log.Println(err)
 	}
 
 	decoder := json.NewDecoder(res.Body)
-	decoder.Decode(&c)
+	err = decoder.Decode(&c)
 
-	log.Println(c.Name)
+	if err != nil {
+		log.Println(err)
+		return ""
+	}
 
 	return c.Name
 }
@@ -133,16 +135,12 @@ func scgPrices(card string) string {
 	q.Set("name", card)
 	siteURL.RawQuery = q.Encode()
 
-	log.Println(siteURL.String())
-
 	c := &http.Client{}
 
 	result, err := parser.DoRequest(*siteURL, c)
 	if err != nil {
 		log.Println(err)
 	}
-
-	log.Println("Got " + strconv.Itoa(len(result)) + " cards")
 
 	var str string
 
