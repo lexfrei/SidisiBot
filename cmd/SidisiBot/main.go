@@ -1,15 +1,16 @@
 package main
 
 import (
-	"encoding/json"
+	"crypto/tls"
 	"log"
+	"net"
 	"net/http"
-	"net/url"
+
+	"github.com/lexfrei/SidisiBot/sidisilib"
 
 	"github.com/spf13/viper"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
-	"github.com/lexfrei/goscgp/parser"
 )
 
 var token string
@@ -29,17 +30,20 @@ func init() {
 }
 
 func main() {
-	myClient := &http.Client{}
-
-	// // Enforce ipv6 connection
-	// myClient = &http.Client{Transport: &http.Transport{
-	// 	Dial: func(network, addr string) (net.Conn, error) {
-	// 		return net.Dial("tcp6", addr)
-	// 	},
-	// 	DialTLS: func(network, addr string) (net.Conn, error) {
-	// 		return tls.Dial("tcp6", addr, &tls.Config{})
-	// 	},
-	// }}
+	var myClient *http.Client
+	if sidisilib.IsThereAnyIPv6() {
+		log.Println("ipv6 connection enforced")
+		myClient = &http.Client{Transport: &http.Transport{
+			Dial: func(network, addr string) (net.Conn, error) {
+				return net.Dial("tcp6", addr)
+			},
+			DialTLS: func(network, addr string) (net.Conn, error) {
+				return tls.Dial("tcp6", addr, &tls.Config{})
+			},
+		}}
+	} else {
+		myClient = &http.Client{}
+	}
 
 	bot, err := tgbotapi.NewBotAPIWithClient(token, myClient)
 
@@ -62,95 +66,10 @@ func main() {
 
 	for update := range updates {
 		if update.Message == nil && update.InlineQuery != nil {
-			var articles []interface{}
-
-			card := fuzzCard(update.InlineQuery.Query)
-
-			msg := tgbotapi.NewInlineQueryResultArticle(
-				update.InlineQuery.ID,
-				card,
-				card)
-			articles = append(articles, msg)
-
-			inlineConfig := tgbotapi.InlineConfig{
-				InlineQueryID: update.InlineQuery.ID,
-				IsPersonal:    false,
-				CacheTime:     0,
-				Results:       articles,
-			}
-			_, err := bot.AnswerInlineQuery(inlineConfig)
-			if err != nil {
-				log.Println(err)
-			}
-
+			go sidisilib.FuzzInline(bot, update.InlineQuery.ID, update.InlineQuery.Query)
 		} else {
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, scgPrices(update.Message.Text))
-			msg.ParseMode = "markdown"
-			msg.ReplyToMessageID = update.Message.MessageID
-			_, err = bot.Send(msg)
-			if err != nil {
-				log.Println(err)
-			}
+			go sidisilib.ResponseWithPrice(bot, update.Message.Chat.ID, update.Message.MessageID, update.Message.Text)
 		}
 
 	}
-
-}
-
-func fuzzCard(card string) string {
-	var c Card
-	u, err := url.Parse("https://api.scryfall.com/cards/named")
-	if err != nil {
-		log.Println(err)
-	}
-
-	q := u.Query()
-	q.Set("fuzzy", card)
-
-	u.RawQuery = q.Encode()
-
-	res, err := http.Get(u.String())
-	if err != nil {
-		log.Println(err)
-	}
-
-	decoder := json.NewDecoder(res.Body)
-	err = decoder.Decode(&c)
-
-	if err != nil {
-		log.Println(err)
-		return ""
-	}
-
-	return c.Name
-}
-
-func scgPrices(card string) string {
-	siteURL, err := url.Parse("http://www.starcitygames.com/results?&switch_display=1")
-	if err != nil {
-		log.Println(err)
-	}
-
-	q := siteURL.Query()
-	q.Set("name", card)
-	siteURL.RawQuery = q.Encode()
-
-	c := &http.Client{}
-
-	result, err := parser.DoRequest(*siteURL, c)
-	if err != nil {
-		log.Println(err)
-	}
-
-	var str string
-
-	for _, v := range result {
-		str = str + v.String() + "\n"
-	}
-
-	return str
-}
-
-type Card struct {
-	Name string `json:"name"`
 }
