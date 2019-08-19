@@ -1,9 +1,7 @@
 package main
 
 import (
-	"crypto/tls"
 	"log"
-	"net"
 	"net/http"
 
 	"github.com/lexfrei/SidisiBot/sidisilib"
@@ -30,20 +28,20 @@ func init() {
 }
 
 func main() {
-	var myClient *http.Client
-	if sidisilib.IsThereAnyIPv6() {
-		log.Println("ipv6 connection enforced")
-		myClient = &http.Client{Transport: &http.Transport{
-			Dial: func(network, addr string) (net.Conn, error) {
-				return net.Dial("tcp6", addr)
-			},
-			DialTLS: func(network, addr string) (net.Conn, error) {
-				return tls.Dial("tcp6", addr, &tls.Config{})
-			},
-		}}
-	} else {
-		myClient = &http.Client{}
-	}
+	// var myClient *http.Client
+	// if sidisilib.IsThereAnyIPv6() {
+	// 	log.Println("ipv6 connection enforced")
+	// 	myClient = &http.Client{Transport: &http.Transport{
+	// 		Dial: func(network, addr string) (net.Conn, error) {
+	// 			return net.Dial("tcp6", addr)
+	// 		},
+	// 		DialTLS: func(network, addr string) (net.Conn, error) {
+	// 			return tls.Dial("tcp6", addr, &tls.Config{})
+	// 		},
+	// 	}}
+	// } else {
+	myClient := &http.Client{}
+	// }
 
 	bot, err := tgbotapi.NewBotAPIWithClient(token, myClient)
 
