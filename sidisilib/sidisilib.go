@@ -1,16 +1,15 @@
 package sidisilib
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
 	"log"
-	"net"
 	"net/http"
 	"net/url"
 
+	scryfall "github.com/BlueMonday/go-scryfall"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 
-	"github.com/lexfrei/SidisiBot/types"
 	"github.com/lexfrei/goscgp/parser"
 )
 
@@ -98,50 +97,40 @@ func FuzzInline(bot *tgbotapi.BotAPI, qID string, text string) {
 }
 
 func fuzzCard(card string) string {
-	var c types.Card
-	u, err := url.Parse("https://api.scryfall.com/cards/named")
+	ctx := context.Background()
+
+	client, err := scryfall.NewClient()
 	if err != nil {
-		log.Println(err)
+		log.Fatal(err)
 	}
 
-	q := u.Query()
-	q.Set("fuzzy", card)
-
-	u.RawQuery = q.Encode()
-
-	res, err := http.Get(u.String())
-	if err != nil {
-		log.Println("can't do get", err)
-	}
-
-	decoder := json.NewDecoder(res.Body)
-	err = decoder.Decode(&c)
+	result, err := client.SearchCards(ctx, card, scryfall.SearchCardsOptions{})
 
 	if err != nil {
-		log.Println("can't decode", err)
+		log.Println("can't fuzz search:", err)
 		return ""
 	}
 
-	return c.Name
+	return result.Cards[0].Name
 }
 
-func IsThereAnyIPv6() bool {
-	ifaces, _ := net.Interfaces()
-	for _, i := range ifaces {
-		addrs, _ := i.Addrs()
-		for _, addr := range addrs {
-			var ip net.IP
-			switch v := addr.(type) {
-			case *net.IPNet:
-				ip = v.IP
-			case *net.IPAddr:
-				ip = v.IP
-			}
+// func IsThereAnyIPv6() bool {
+// 	ifaces, _ := net.Interfaces()
+// 	for _, i := range ifaces {
+// 		addrs, _ := i.Addrs()
+// 		for _, addr := range addrs {
+// 			var ip net.IP
+// 			switch v := addr.(type) {
+// 			case *net.IPNet:
+// 				ip = v.IP
+// 			case *net.IPAddr:
+// 				ip = v.IP
+// 			}
 
-			if ip.To4() != nil {
-				return true
-			}
-		}
-	}
-	return false
-}
+// 			if ip.To4() != nil {
+// 				return true
+// 			}
+// 		}
+// 	}
+// 	return false
+// }
