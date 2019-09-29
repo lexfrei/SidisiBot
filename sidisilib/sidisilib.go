@@ -6,12 +6,15 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"regexp"
 
 	scryfall "github.com/BlueMonday/go-scryfall"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 
 	"github.com/lexfrei/goscgp/parser"
 )
+
+var reEngLan = regexp.MustCompile(`^[A-Za-z\s]+$`)
 
 func GetSCGPrices(card string) string {
 	siteURL, err := url.Parse("http://www.starcitygames.com/results?&switch_display=1")
@@ -74,7 +77,7 @@ func FuzzInline(bot *tgbotapi.BotAPI, qID string, text string) {
 		return
 	}
 
-	result, err := client.SearchCards(ctx, text, scryfall.SearchCardsOptions{Unique: scryfall.UniqueModeCards, IncludeMultilingual: true})
+	result, err := client.SearchCards(ctx, text, scryfall.SearchCardsOptions{Unique: scryfall.UniqueModeCards, IncludeMultilingual: !reEngLan.Match([]byte(text))})
 	if err != nil {
 		log.Printf("can't fuzz search for \"%s\": %s", text, err)
 		return
