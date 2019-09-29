@@ -50,12 +50,6 @@ func GetSCGPrices(card string) string {
 // ResponseWithPrice comment placeholder
 func ResponseWithPrice(bot *tgbotapi.BotAPI, chatID int64, messageID int, text string) {
 
-	// edit := tgbotapi.NewEditMessageText(chatID, messageID, "kek!")
-	// _, err := bot.Send(edit)
-	// if err != nil {
-	// 	log.Println(err)
-	// }
-
 	msg := tgbotapi.NewMessage(chatID, GetSCGPrices(text))
 	msg.ParseMode = "markdown"
 	msg.ReplyToMessageID = messageID
@@ -72,15 +66,37 @@ func FuzzInline(bot *tgbotapi.BotAPI, qID string, text string) {
 	}
 	var articles []interface{}
 
-	card := fuzzCard(text)
-	if len(card) == 0 {
+	ctx := context.Background()
+
+	client, err := scryfall.NewClient()
+	if err != nil {
+		log.Println("can't create scryfall client:", err)
 		return
 	}
 
-	msg := tgbotapi.NewInlineQueryResultArticle(
-		qID,
-		card,
-		card)
+	result, err := client.SearchCards(ctx, text, scryfall.SearchCardsOptions{Unique: scryfall.UniqueModeCards, IncludeMultilingual: true})
+	if err != nil {
+		log.Printf("can't fuzz search for \"%s\": %s", text, err)
+		return
+	}
+
+	if len(result.Cards) < 1 {
+		return
+	}
+
+	msg := tgbotapi.InlineQueryResultArticle{
+		Type:  "article",
+		ID:    qID,
+		Title: result.Cards[0].Name,
+		InputMessageContent: tgbotapi.InputTextMessageContent{
+			Text: result.Cards[0].Name,
+		},
+	}
+	if result.Cards[0].ImageURIs != nil {
+		msg.ThumbURL = result.Cards[0].ImageURIs.ArtCrop
+		msg.ThumbHeight = 50
+	}
+
 	articles = append(articles, msg)
 
 	inlineConfig := tgbotapi.InlineConfig{
@@ -89,48 +105,8 @@ func FuzzInline(bot *tgbotapi.BotAPI, qID string, text string) {
 		CacheTime:     0,
 		Results:       articles,
 	}
-	_, err := bot.AnswerInlineQuery(inlineConfig)
-
+	_, err = bot.AnswerInlineQuery(inlineConfig)
 	if err != nil {
 		log.Println("can't do inline response", err)
 	}
 }
-
-func fuzzCard(card string) string {
-	ctx := context.Background()
-
-	client, err := scryfall.NewClient()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	result, err := client.SearchCards(ctx, card, scryfall.SearchCardsOptions{})
-
-	if err != nil {
-		log.Println("can't fuzz search:", err)
-		return ""
-	}
-
-	return result.Cards[0].Name
-}
-
-// func IsThereAnyIPv6() bool {
-// 	ifaces, _ := net.Interfaces()
-// 	for _, i := range ifaces {
-// 		addrs, _ := i.Addrs()
-// 		for _, addr := range addrs {
-// 			var ip net.IP
-// 			switch v := addr.(type) {
-// 			case *net.IPNet:
-// 				ip = v.IP
-// 			case *net.IPAddr:
-// 				ip = v.IP
-// 			}
-
-// 			if ip.To4() != nil {
-// 				return true
-// 			}
-// 		}
-// 	}
-// 	return false
-// }
