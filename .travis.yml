@@ -23,6 +23,6 @@ jobs:
       if: branch = master
       script:
         - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-        - docker build -t "lexfrei/sidisibot:latest" -t "lexfrei/sidisibot:git$(git rev-parse --short HEAD)" .
+        - docker build --squash -t "lexfrei/sidisibot:latest" -t "lexfrei/sidisibot:git$(git rev-parse --short HEAD)" .
         - docker push "${DOCKER_USERNAME}/sidisibot:latest"
         - docker push "${DOCKER_USERNAME}/sidisibot:git$(git rev-parse --short HEAD)"
