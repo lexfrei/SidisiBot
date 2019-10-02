@@ -16,7 +16,7 @@ import (
 func GetSCGPrices(card string) string {
 	siteURL, err := url.Parse("http://www.starcitygames.com/results?&switch_display=1")
 	if err != nil {
-		log.Println("can't parse url:", err)
+		log.Printf("can't parse url: %s", err)
 	}
 
 	q := siteURL.Query()
@@ -55,7 +55,7 @@ func ResponseWithPrice(bot *tgbotapi.BotAPI, chatID int64, messageID int, text s
 	msg.ReplyToMessageID = messageID
 	_, err := bot.Send(msg)
 	if err != nil {
-		log.Println("can't do response:", err)
+		log.Printf("can't do response: %s", err)
 	}
 }
 
@@ -70,7 +70,7 @@ func FuzzInline(bot *tgbotapi.BotAPI, qID string, text string) {
 
 	client, err := scryfall.NewClient()
 	if err != nil {
-		log.Println("can't create scryfall client:", err)
+		log.Printf("can't create scryfall client: %s", err)
 		return
 	}
 
@@ -90,7 +90,8 @@ func FuzzInline(bot *tgbotapi.BotAPI, qID string, text string) {
 	}
 	if result.ImageURIs != nil {
 		msg.ThumbURL = result.ImageURIs.ArtCrop
-		msg.ThumbHeight = 50
+		msg.ThumbHeight = 24
+		msg.ThumbWidth = 24
 	}
 
 	articles = append(articles, msg)
@@ -103,6 +104,6 @@ func FuzzInline(bot *tgbotapi.BotAPI, qID string, text string) {
 	}
 	_, err = bot.AnswerInlineQuery(inlineConfig)
 	if err != nil {
-		log.Println("can't do inline response", err)
+		log.Printf("can't do inline response: %s", err)
 	}
 }
