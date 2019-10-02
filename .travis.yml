@@ -1,28 +1,16 @@
-language: go
+language: minimal
 
 sudo: false
 
 git:
   depth: 1
 
-go:
-  - "1.x"
 jobs:
   include:
-    # - stage: build
-    #   script: go build ./...
-    # - stage: test
-    #   script:
-    #     - go get github.com/mattn/goveralls
-    #     - go test -v -covermode=count -coverprofile=coverage.out ./...
-    #     - $GOPATH/bin/goveralls -coverprofile=coverage.out -service=travis-ci
-    # - stage: docker build
-    #   script:
-    #     - docker build --rm -t "${DOCKER_USERNAME}/sidisibot:latest" -t "${DOCKER_USERNAME}/sidisibot:git$(git rev-parse --short HEAD)" .
-    - stage: docker push
+    - stage: docker
       if: branch = master
       script:
         - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-        - docker build --squash -t "lexfrei/sidisibot:latest" -t "lexfrei/sidisibot:git$(git rev-parse --short HEAD)" .
+        - docker build -t "lexfrei/sidisibot:latest" -t "lexfrei/sidisibot:git$(git rev-parse --short HEAD)" .
         - docker push "${DOCKER_USERNAME}/sidisibot:latest"
         - docker push "${DOCKER_USERNAME}/sidisibot:git$(git rev-parse --short HEAD)"
