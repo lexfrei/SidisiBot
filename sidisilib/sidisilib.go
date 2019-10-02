@@ -6,15 +6,12 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"regexp"
 
 	scryfall "github.com/BlueMonday/go-scryfall"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 
 	"github.com/lexfrei/goscgp/parser"
 )
-
-var reEngLan = regexp.MustCompile(`^[A-Za-z\s]+$`)
 
 func GetSCGPrices(card string) string {
 	siteURL, err := url.Parse("http://www.starcitygames.com/results?&switch_display=1")
@@ -77,26 +74,22 @@ func FuzzInline(bot *tgbotapi.BotAPI, qID string, text string) {
 		return
 	}
 
-	result, err := client.SearchCards(ctx, text, scryfall.SearchCardsOptions{Unique: scryfall.UniqueModeCards, IncludeMultilingual: !reEngLan.Match([]byte(text))})
+	result, err := client.GetCardByName(ctx, text, false, scryfall.GetCardByNameOptions{})
 	if err != nil {
 		log.Printf("can't fuzz search for \"%s\": %s", text, err)
-		return
-	}
-
-	if len(result.Cards) < 1 {
 		return
 	}
 
 	msg := tgbotapi.InlineQueryResultArticle{
 		Type:  "article",
 		ID:    qID,
-		Title: result.Cards[0].Name,
+		Title: result.Name,
 		InputMessageContent: tgbotapi.InputTextMessageContent{
-			Text: result.Cards[0].Name,
+			Text: result.Name,
 		},
 	}
-	if result.Cards[0].ImageURIs != nil {
-		msg.ThumbURL = result.Cards[0].ImageURIs.ArtCrop
+	if result.ImageURIs != nil {
+		msg.ThumbURL = result.ImageURIs.ArtCrop
 		msg.ThumbHeight = 50
 	}
 
