@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"net/url"
 
-	scryfall "github.com/lexfrei/go-scryfall"
+	scryfall "github.com/BlueMonday/go-scryfall"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 
 	"github.com/lexfrei/goscgp/parser"
